@@ -1,8 +1,8 @@
 """GloVe Embeddings + chars conv and max pooling + bi-LSTM + CRF
 task: Ner
 dataset: train, eval and test on CoNLL-2003 dataset
-metrics: acc = 0.9803926, f1 = 0.9146103, global_step = 11199,
-loss = 0.9443114, precision = 0.9064165, recall = 0.92295367
+metrics: acc = 0.9798997, f1 = 0.91270673, global_step = 12909, 
+loss = 0.94680834, precision = 0.9033933, recall = 0.92221403
 reference: https://github.com/guillaumegenthial/tf_ner
 tf version: 1.15
 """
@@ -102,7 +102,7 @@ def model_fn(features, labels, mode, params):
     # Char Embeddings，学习字符嵌入向量
     char_ids = vocab_chars.lookup(chars)
     # 论文要求的char_embeddings初始化方法[-sqrt(3/dim),sqrt(3/dim)]，使用后
-    # f1 = 0.9134927，相比使用前f1 = 0.9146103降低了
+    # f1 = 0.91270673，相比使用前f1 = 0.91264033提高了，但属于随机性的正常浮动
     variable = tf.get_variable(
         'chars_embeddings', [num_chars, params['dim_chars']], dtype=tf.float32)
         # initializer=tf.random_uniform_initializer(-tf.sqrt(3/params['dim_chars']), tf.sqrt(3/params['dim_chars'])))

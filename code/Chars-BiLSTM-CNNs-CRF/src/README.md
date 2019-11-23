@@ -42,6 +42,7 @@ If you just want to get started, once you have created your `{name}.words.txt` a
 
 ```
 cd data/example
+python conll2003_preprocess.py # 预处理conll-2003 dataset成build程序可处理的文件格式
 make download-glove
 make build
 ```
