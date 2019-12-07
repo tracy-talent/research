@@ -95,7 +95,7 @@ def model_fn(features, labels, mode, params):
         params['chars'], num_oov_buckets=params['num_oov_buckets'])
     with Path(params['tags']).open() as f:
         indices = [idx for idx, tag in enumerate(f) if tag.strip() != 'O']
-        num_tags = len(indices) + 1 # indices在evaluate帮助度量计算，O被作为负类不包含在indices中
+        num_tags = len(indices) + 1 # indices是正类标签索引，O被作为负类不包含在indices中，在evaluate帮助度量计算
     with Path(params['chars']).open() as f:
         num_chars = sum(1 for _ in f) + params['num_oov_buckets']
 

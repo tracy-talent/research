@@ -38,8 +38,10 @@ def precision(labels, predictions, num_classes, pos_indices=None,
     -------
     tuple of (scalar float Tensor, update_op)
     """
-    # cm是[num_classes, num_classes]的矩阵mat，mat[labels, predictions]=1，其他值为0，
-    # 并用weights掩码即weights为False的位置对应mat行位置全为0
+    # cm是[num_classes, num_classes]初始0的矩阵mat，mat[labels, predictions]+=1，其他值为0，
+    # 并用weights掩码只保留True位置对应到labels和weights的元素
+    # 注意，传入batch中所有样本的labels和predictions都累加到同一个cm矩阵
+    # 且注意混淆矩阵只适用于multi-class、single-label的分类任务
     cm, op = _streaming_confusion_matrix(
         labels, predictions, num_classes, weights)
     pr, _, _ = metrics_from_confusion_matrix(
@@ -164,7 +166,7 @@ def pr_re_fbeta(cm, pos_indices, beta=1):
 
     pr = safe_div(diag_sum, tot_pred) # 查全率
     re = safe_div(diag_sum, tot_gold) # 查准率
-    fbeta = safe_div((1. + beta**2) * pr * re, beta**2 * pr + re) # 甲醛
+    fbeta = safe_div((1. + beta**2) * pr * re, beta**2 * pr + re) # 加权F1
 
     return pr, re, fbeta
 
@@ -203,7 +205,9 @@ def metrics_from_confusion_matrix(cm, pos_indices=None, average='micro',
         if average == 'macro':
             pr = tf.reduce_mean(precisions)
             re = tf.reduce_mean(recalls)
-            fbeta = tf.reduce_mean(fbetas)
+            # 西瓜书上公式，直接利用macro的pr和re求macro的fbeta，而不是取fbetas平均
+            # fbeta = safe_div((1. + beta**2) * pr * re, beta**2 * pr + re)
+            fbeta = tf.reduce_mean(fbetas) # github上作者求取fbeta方式为取平均
             return pr, re, fbeta
         if average == 'weighted':
             n_gold = tf.reduce_sum(n_golds)
