@@ -530,8 +530,8 @@ for epoch in range(EPOCHS):
   # inp -> portuguese, tar -> english
   for (batch, (inp, tar)) in enumerate(train_dataset):
     # label smoothing regualrization(LSR)
-    real_lsr = np.zeros((tar.shape[0], tar.shape[1] - 1, target_vocab_size), dtype=np.float32)
-    real_lsr[:] = lsr_rate * (1 / target_vocab_size)
+    real_lsr = np.full((tar.shape[0], tar.shape[1] - 1, target_vocab_size),
+                       lsr_rate * (1 / target_vocab_size), dtype=np.float32)
     for i in range(tar.shape[0]):
       for j in range(tar.shape[1] - 1):
         real_lsr[i, j, tar[i][j + 1]] += 1 - lsr_rate
