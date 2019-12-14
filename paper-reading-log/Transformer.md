@@ -133,6 +133,8 @@ $$
 
 可以看到使用了LSR在验证集和测试集上都取得了比更好的bleu score.但是LSR对perplexity不利，因为模型的学习目标变得更不确切了。
 
+tensorflow tutorial上的transformer实现是直接将d\_model维Q,K,V划分成num_heads份，上面的结果也是采用这种方法。但是论文中是借助矩阵乘matmul来将d\_model维转换成d\_model/num_heads维，使用论文中这种方法在小数据集ted的测试集上bleu score为0.432/43.2
+
 ### LayerNormalization
 
 在multi-head attention之后使用layer normlization可以加速参数训练使得模型收敛，并且可以避免梯度消失和梯度爆炸。相比BatchNormalization，LayerNormalization更适用于序列化模型比如RNN等，而BatchNormalization则适用于CNN处理图像。
