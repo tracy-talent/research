@@ -20,15 +20,17 @@ a repository to record my research
 * Chars-BiLSTM-CNNs-CRF
 
   - [x] [pdf: CoRR 2016](https://arxiv.org/abs/1603.01354)
-- [x] [reading-notes](https://github.com/tracy-talent/research/blob/master/paper-reading-log/Chars-BiLSTM-CNNs-CRF.md)
+  - [x] [reading-notes](https://github.com/tracy-talent/research/blob/master/paper-reading-log/Chars-BiLSTM-CNNs-CRF.md)
   - [x] [code](https://github.com/tracy-talent/research/tree/master/code/Chars-BiLSTM-CNNs-CRF)
-
 * Transformer
 
   - [x] [pdf: NIPS 2017](https://arxiv.org/abs/1706.03762)
-
-  - [x] [reading-notes](https://brooksj.com/2019/12/06/Transformer/)
+- [x] [reading-notes](https://brooksj.com/2019/12/06/Transformer/)
   - [x] [code](https://github.com/tracy-talent/research/tree/master/code/Transformer)
+* ELMo(Enbeddings from Language Models)
+  - [x] [pdf:  NAACL 2018]( https://arxiv.org/abs/1802.05365)
+  - [ ] [reading-notes]()
+  - [ ] [code]()
 
 ### ToDo-List
 

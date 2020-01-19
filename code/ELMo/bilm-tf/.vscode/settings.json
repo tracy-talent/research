@@ -1,0 +1,15 @@
+{
+    "python.pythonPath": "/opt/anaconda3/envs/tf2/bin/python",
+    "python.pipenvPath": "/opt/anaconda3/envs/tf2/lib/python3.6/site-packages/pip",
+    "vsicons.dontShowNewVersionMessage": true,
+    "workbench.colorTheme": "One Dark Pro",
+    "editor.tabSize": 4,
+    "python.linting.pylintArgs": [ // 关闭pylint的波浪线提示
+        "--disable=W,C,E" 
+    ],  
+    "editor.cursorSmoothCaretAnimation": false,
+    "code-runner.executorMap": {
+        "python": "/opt/anaconda3/envs/tf2/bin/python -u"
+    },  
+    "editor.fontFamily": "monospace",
+}
