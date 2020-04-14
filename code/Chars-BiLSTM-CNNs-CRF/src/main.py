@@ -137,10 +137,8 @@ def model_fn(features, labels, mode, params):
     output = tf.transpose(output, perm=[1, 0, 2])
     output = tf.layers.dropout(output, rate=dropout, training=training)
 
-    # CRF
-    # 按照crf公式exp(W_{y'y}T*z_{i} + b_{y'y})，本应该有num_tag*num_tags个长度为output.shape[-1]长度的转移向量，
-    # 这里dense转换只用了nums_tags个output_shape[-1]长度的转移向量，查看tf1.15版本的crf实现后理解了这里的做法就是只学习转移到
-    # 下一状态的向量，而为学习不同状态转移到某下一状态的差别，通过num_tags*num_tags个偏置向量即crf_params矩阵来学习
+    # CRF，线性链条件随机场输出变量的最大团为相邻2节点，故特征函数最多只与相邻2个输出变量有关
+    # logits代表crf中的一元状态特征，crf_params代表crf中的二元转移特征
     logits = tf.layers.dense(output, num_tags) # 通过一个维度(output.shape[-1], num_tags)矩阵使得前面维度不变，最后一维变num_tags
     crf_params = tf.get_variable("crf", [num_tags, num_tags], dtype=tf.float32)
     pred_ids, _ = tf.contrib.crf.crf_decode(logits, crf_params, nwords)
@@ -175,7 +173,7 @@ def model_fn(features, labels, mode, params):
         # 后者会根据当前batch结果更新total和count(正确数)并返回更新后的accuracy，所以必须执行update_op，如果把op[0]
         # 即accuracy加入到summary中则total和count没有更新，accuracy始终不变
         for metric_name, op in metrics.items():
-            tf.summary.scalar(metric_name, op[1])  
+            tf.summary.scalar(metric_name, op[1]) 
 
         if mode == tf.estimator.ModeKeys.EVAL:
             return tf.estimator.EstimatorSpec(

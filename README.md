@@ -29,8 +29,8 @@ a repository to record my research
   - [x] [code](https://github.com/tracy-talent/research/tree/master/code/Transformer)
 * ELMo(Enbeddings from Language Models)
   - [x] [pdf:  NAACL 2018]( https://arxiv.org/abs/1802.05365)
-  - [ ] [reading-notes]()
-  - [ ] [code]()
+  - [x] [reading-notes](https://brooksj.com/2020/01/19/ELMo/)
+  - [x] [code](https://github.com/tracy-talent/research/tree/master/code/ELMo)
 
 ### ToDo-List
 
