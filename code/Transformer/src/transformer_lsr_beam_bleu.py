@@ -19,15 +19,16 @@ examples, metadata = tfds.load('ted_hrlr_translate/pt_to_en', with_info=True,
 train_examples, val_examples, test_examples = examples['train'], examples['validation'], examples['test']
 
 # target_vocab_size:approximate size of the vocabulary to create
-# 注意是大概的size，结果可能约大于size，同时target_vocab_size必须大于等于258
+# 注意是大概的size，结果可能约大于size，同时target_vocab_size必须大于等于257(256个acsii码＋padding_index(0))
+# 因此encode得到的token索引是从１开始的，0是padding index
 # tokenizer_en = tfds.features.text.SubwordTextEncoder.build_from_corpus(
     # (en.numpy() for pt, en in train_examples), target_vocab_size=2**13)
 # tokenizer_en.save_to_file('vocab_file_en')
-tokenizer_en = tfds.features.text.SubwordTextEncoder.load_from_file('vocab_file_en')
+tokenizer_en = tfds.features.text.SubwordTextEncoder.load_from_file('vocab_file_en') # vocab_size=文件内subword数目+257
 # tokenizer_pt = tfds.features.text.SubwordTextEncoder.build_from_corpus(
     # (pt.numpy() for pt, en in train_examples), target_vocab_size=2**13)
 # tokenizer_pt.save_to_file('vocab_file_pt')
-tokenizer_pt = tfds.features.text.SubwordTextEncoder.load_from_file('vocab_file_pt')
+tokenizer_pt = tfds.features.text.SubwordTextEncoder.load_from_file('vocab_file_pt') # vocab_size=文件内subword数目+257
 
 
 # model hyperparameters
@@ -70,7 +71,7 @@ def filter_max_length(x, y, max_length=MAX_LENGTH):
 def tf_encode(pt, en):
   return tf.py_function(encode, [pt, en], [tf.int32, tf.int32])
 
-train_dataset = train_examples.map(tf_encode)
+train_dataset = train_examples.map(tf_encode, num_parallel_calls=tf.data.experimental.AUTOTUNE)
 train_dataset = train_dataset.filter(filter_max_length)
 # cache the dataset to memory to get a speedup while reading from it.
 train_dataset = train_dataset.cache()
@@ -79,12 +80,12 @@ train_dataset = train_dataset.shuffle(BUFFER_SIZE).padded_batch(
 train_dataset = train_dataset.prefetch(tf.data.experimental.AUTOTUNE)
 
 
-val_dataset = val_examples.map(tf_encode)
+val_dataset = val_examples.map(tf_encode, num_parallel_calls=tf.data.experimental.AUTOTUNE)
 val_dataset = val_dataset.filter(filter_max_length).padded_batch(
     BATCH_SIZE, padded_shapes=([-1], [-1]), padding_values=(0, 0)).prefetch(
       tf.data.experimental.AUTOTUNE)
 
-test_dataset = test_examples.map(tf_encode)
+test_dataset = test_examples.map(tf_encode, num_parallel_calls=tf.data.experimental.AUTOTUNE)
 test_dataset = test_dataset.filter(filter_max_length).padded_batch(
     BATCH_SIZE, padded_shapes=([-1], [-1]), padding_values=(0, 0)).prefetch(
       tf.data.experimental.AUTOTUNE)
@@ -187,7 +188,6 @@ class MultiHeadAttention(tf.keras.layers.Layer):
     self.wq = tf.keras.layers.Dense(d_model)
     self.wk = tf.keras.layers.Dense(d_model)
     self.wv = tf.keras.layers.Dense(d_model)
-    # self.wi = [tf.keras.layers.Dense(self.depth) for i in range(8)]
 
     self.dense = tf.keras.layers.Dense(d_model)
         
@@ -196,7 +196,6 @@ class MultiHeadAttention(tf.keras.layers.Layer):
     Transpose the result such that the shape is (batch_size, num_heads, seq_len, depth)
     """
     x = tf.reshape(x, (batch_size, -1, self.num_heads, self.depth)) # 直接将维度为d_model的embedding划分成num_heads个depth维度
-    # x = tf.stack([self.wi[i](x) for i in range(8)], axis=-2) # 按照论文，通过num_heads次线性转换将d_model转换为num_heads个depth维度
     return tf.transpose(x, perm=[0, 2, 1, 3])
     
   def call(self, v, k, q, mask):
@@ -443,7 +442,7 @@ def loss_function(real, real_lsr, pred):
   mask = tf.cast(mask, dtype=loss_.dtype)
   loss_ *= mask
   
-  return tf.reduce_mean(loss_)
+  return tf.reduce_sum(loss_) / tf.reduce_sum(mask)
 
 train_loss = tf.keras.metrics.Mean(name='train_loss')
 train_accuracy = tf.keras.metrics.SparseCategoricalAccuracy(
@@ -468,9 +467,9 @@ def create_masks(inp, tar):
   # Used in the 1st attention block in the decoder.
   # It is used to pad and mask future tokens in the input received by 
   # the decoder.
-  look_ahead_mask = create_look_ahead_mask(tf.shape(tar)[1])
-  dec_target_padding_mask = create_padding_mask(tar)
-  combined_mask = tf.maximum(dec_target_padding_mask, look_ahead_mask)
+  look_ahead_mask = create_look_ahead_mask(tf.shape(tar)[1]) # [seqlen, seqlen]
+  dec_target_padding_mask = create_padding_mask(tar) # [batch_size, 1, 1, seqlen]
+  combined_mask = tf.maximum(dec_target_padding_mask, look_ahead_mask) # [batch_size, 1, seqlen, seqlen]，broadcast
   
   return enc_padding_mask, combined_mask, dec_padding_mask
 
@@ -530,11 +529,12 @@ for epoch in range(EPOCHS):
   # inp -> portuguese, tar -> english
   for (batch, (inp, tar)) in enumerate(train_dataset):
     # label smoothing regualrization(LSR)
-    real_lsr = np.full((tar.shape[0], tar.shape[1] - 1, target_vocab_size),
-                       lsr_rate * (1 / target_vocab_size), dtype=np.float32)
+    real_lsr = np.full((tar.shape[0], tar.shape[1] - 1, target_vocab_size), lsr_rate * (1 / target_vocab_size), dtype=np.float32)
+    # real_lsr = np.zeros((tar.shape[0], tar.shape[1] - 1, target_vocab_size), dtype=np.float32)
+    # real_lsr[:] = lsr_rate * (1 / target_vocab_size)
     for i in range(tar.shape[0]):
       for j in range(tar.shape[1] - 1):
-        real_lsr[i, j, tar[i][j + 1]] += 1 - lsr_rate
+        real_lsr[i, j, tar[i][j + 1]] = 1 - lsr_rate
         
     train_step(inp, tar, real_lsr)
     

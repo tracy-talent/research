@@ -427,7 +427,7 @@ def loss_function(real, pred):
   mask = tf.cast(mask, dtype=loss_.dtype)
   loss_ *= mask
   
-  return tf.reduce_mean(loss_)
+  return tf.reduce_sum(loss_) / tf.reduce_sum(mask)
 
 train_loss = tf.keras.metrics.Mean(name='train_loss')
 train_accuracy = tf.keras.metrics.SparseCategoricalAccuracy(
